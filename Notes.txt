@@ -198,3 +198,223 @@ TI DEN LYNEI TO ESCAPE
 
 
 -----------------------------------------
+
+Model Mapping
+
+We are gonna use a new library to our project called Automapper.
+
+dotnet add package AutoMapper
+
+TI EINAI TO MODEL MAPPING
+- Metafora timwn apo ena model se ena allo model.
+- Xreiazetai otan ta dedomena erxontai me alli morfi apo auti pou theloume.
+  Px to JSON exei computer_id, video_card (snake_case) -> ComputerSnake
+  enw to programma mas doulevei me ComputerId, VideoCard -> Computer.
+- Anti na grafoume me to xeri ComputerId = snake.computer_id gia kathe pedio,
+  dinoume kanones sto AutoMapper kai kanei autos tin antigrafi.
+
+TI KANEI TO KATHE KOMMATI
+Mapper mapper = new Mapper(new MapperConfiguration((cfg) => {
+    cfg.CreateMap<ComputerSnake, Computer>();
+}));
+- MapperConfiguration = OI KANONES (apo poio model se poio).
+- Mapper = AUTOS POU EFARMOZEI tous kanones.
+- cfg = to antikeimeno sto opoio grafoume tous kanones.
+- (cfg) => { ... } = lambda, mia mikri synartisi xwris onoma.
+  Ti dinoume sto AutoMapper kai auti ti trexei otan ftiaxnei to configuration.
+
+CreateMap<1o, 2o>
+- 1o = SOURCE, apo pou PAIRNOUME tis times (ComputerSnake).
+- 2o = DESTINATION, pou tis GRAFOUME (Computer).
+- I seira exei simasia: antigrafi mono apo to 1o sto 2o.
+
+PROSOXH
+- To CreateMap antigrafei mono osa onomata tairiazoun (xwris na koitaei
+  pezo/kefalaia): motherboard -> Motherboard, price -> Price.
+- Me _ den tairiazoun: computer_id, video_card thelei ForMember,
+  alliws menoun me tin default timi, xwris error:
+  .ForMember(dest => dest.VideoCard, opt => opt.MapFrom(src => src.video_card))
+- Afou ftiaxtei o mapper, h antigrafi ginetai me mapper.Map<...>(...).
+
+TI KANEI TO ForMember
+- Leei sto AutoMapper: "auto to pedio tou destination na parei tin timi tou
+  apo ekeino to pedio tou source".
+- To xreiazomaste otan ta onomata diaferoun kai o AutoMapper den ta vriskei monos tou.
+- Ena ForMember gia kathe tetoio pedio, kai to ; MONO sto telos tis alysidas.
+
+.ForMember(destination => destination.ComputerId,              // poio pedio GEMIZOUME (Computer)
+    options => options.MapFrom(source => source.computer_id))  // apo poio pedio DIAVAZOUME (ComputerSnake)
+
+κείμενο JSON  --Deserialize-->  ComputerSnake  --Map-->  Computer
+
+
+-----------------------------------------
+
+MODEL MAPPING vs JSONPROPERTYNAME
+
+1. VASIKH DIAFORA
+
+Deserialize = JSON text → C# object.
+Serialize = C# object → JSON text.
+Mapping = Metafora timwn apo ena C# object se ena allo C# object (synithws diaforetikis klasis).
+AutoMapper = Library pou kanei automata to mapping metaxy objects.
+JsonPropertyName = Attribute pou leei sto System.Text.Json poio JSON key antistoixei se ena C# property.
+
+PROSOXH: Mapping einai h diadikasia. AutoMapper einai to library pou kanei automata auth th diadikasia.
+
+
+2. POTE XRHSIMOPOIW JsonPropertyName
+
+To xrhsimopoioume otan ta onomata sto JSON den tairiazoun me ta properties tis C# klasis mas.
+
+Px JSON:
+
+{
+  "computer_id": 1,
+  "video_card": "RTX 2060"
+}
+
+C# Model:
+
+using System.Text.Json.Serialization;
+
+public class Computer
+{
+    [JsonPropertyName("computer_id")]
+    public int ComputerId { get; set; }
+
+    [JsonPropertyName("video_card")]
+    public string VideoCard { get; set; }
+}
+
+Deserialize:
+
+Computer? computer =
+    JsonSerializer.Deserialize<Computer>(json);
+
+TI KANEI TO JsonPropertyName:
+- "computer_id" = to akrives onoma tou key sto JSON.
+- ComputerId = to property tis C# pou tha parei tin timi.
+- Den xreiazomaste ComputerSnake oute AutoMapper.
+- Douleuei kai antistrofa sto Serialize: ComputerId → "computer_id".
+
+PROSOXH: To Newtonsoft DEN koitaei to [JsonPropertyName].
+Ekei xrisimopoioume [JsonProperty("computer_id")].
+
+
+FLOW:
+JSON → Deserialize → Computer
+
+ALLOS TROPOS GIA snake_case, xwris attribute se kathe pedio:
+
+new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }
+
+
+3. POTE XRHSIMOPOIW MAPPING / AUTOMAPPER
+
+Mapping kanoume otan exoume hdh ena C# object kai theloume na metatrepsoume ta dedomena tou se ena allo C# object.
+
+Px:
+ComputerSnake = Model pou exei ta onomata tou JSON (snake_case).
+Computer = Model pou xrisimopoiei to programma mas (PascalCase).
+
+FLOW:
+JSON → Deserialize → ComputerSnake → AutoMapper → Computer
+
+GENIKH AKOLOUTHIA STON KWDIKA:
+
+Vima 1. Diavazoume to JSON
+string json = File.ReadAllText("ComputersSnake.json");
+
+Vima 2. Kanoume Deserialize se ComputerSnake
+IEnumerable<ComputerSnake>? computersSystem =
+    JsonSerializer.Deserialize<IEnumerable<ComputerSnake>>(json);
+
+Twra exoume C# objects typou ComputerSnake.
+
+Vima 3. Ftiaxnoume ton mapper kai orizoume tous kanones
+Mapper mapper = new Mapper(new MapperConfiguration((cfg) =>
+{
+    cfg.CreateMap<ComputerSnake, Computer>()
+        .ForMember(
+            dest => dest.ComputerId,
+            opt => opt.MapFrom(src => src.computer_id))
+        .ForMember(
+            dest => dest.VideoCard,
+            opt => opt.MapFrom(src => src.video_card));
+            etc. gia ola ta pedia
+}));
+
+CreateMap<ComputerSnake, Computer>() = Apo poio model se poio model kanoume mapping.
+ForMember = Orizoume xeirokinhta poio property tou destination tha parei timh apo poio property tou source.
+Xreiazetai otan o AutoMapper den mporei na antistoixhsei monos tou ta properties.
+
+
+Vima 4. Kanoume Mapping
+
+if (computersSystem != null)
+{
+    IEnumerable<Computer> computerResult =
+        mapper.Map<IEnumerable<Computer>>(computersSystem);
+}
+
+TI KANEI to MAP:
+- computersSystem = SOURCE, ta arxika objects (ComputerSnake).
+- <IEnumerable<Computer>> = DESTINATION TYPE, se ti theloume na metatrapoun.
+- computerResult = Metavliti pou apothikeuei ta nea objects.
+- Map<Computer> = Metatrepei ena object.
+- Map<IEnumerable<Computer>> = Metatrepei mia syllogi apo objects.
+
+PROSOXH: O AutoMapper den xrisimopoiei automata ta [JsonPropertyName] attributes. Exei dikous tou kanones mapping.
+
+
+4. REAL-WORLD EXAMPLE - DTO
+
+Se pragmatikes efarmoges to mapping xrisimopoieitai poly syxna metaxy:
+- Database Entity → Response DTO
+- Request DTO → Database Entity
+- External API Model → Internal Model
+
+Px exoume:
+Product → Id, Name, Price, SupplierCost.
+Alla sto frontend theloume na steiloume mono Name kai Price.
+
+Ftiaxnoume:
+ProductDto → Name, Price.
+
+Kai kanoume:
+ProductDto dto = mapper.Map<ProductDto>(product);
+
+Etsi dimiourgoume ena ProductDto pou periexei mono ta properties pou exoume orisei sto DTO, efoson exoume swsto mapping configuration.
+
+
+5. POTE XRHSIMOPOIW TO KATHE ENA
+
+JSON → C# object                : Deserialize
+JSON computer_id → ComputerId   : JsonPropertyName
+ComputerSnake → Computer        : Mapping
+Product → ProductDto            : Mapping
+C# object → JSON                : Serialize
+Antigrafi ligwn properties      : Manual Mapping
+
+
+6. Final Rules GIA NA TO THYMAMAI!!
+
+- JsonPropertyName = JSON key ↔ C# property.
+- AutoMapper = C# object → allo C# object.
+- An xreiazomai mono ena model, kanw Deserialize apeutheias.
+- An ta JSON keys exoun diaforetika onomata, mporw na xrishmopoihsw JsonPropertyName.
+- An xreiazomai dyo diaforetika models gia diaforetikous skopous, tote exetazw to Mapping.
+- Den xreiazomai AutoMapper apla kai mono epeidi to JSON exei snake_case.
+- Prin xrisimopoiisw mapper.Map, prepei na exw orisei tous kanones tou mapping.
+- Oute to Deserialize oute to Mapping kanoun automata INSERT sti vasi. Gia auto xreiazomai DapperEF.
+
+COMPLETE FLOW STO PROJECT MAS:
+
+ComputersSnake.json → Deserialize → ComputerSnake → AutoMapper → Computer → Dapper → SQL Server
+
+SIMPLER ALTERNATIVE:
+
+ComputersSnake.json → Deserialize + JsonPropertyName → Computer → Dapper → SQL Server
+
+
