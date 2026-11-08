@@ -5,11 +5,11 @@ namespace HelloWorld.Models
         // private string _motherboard ;
         public int ComputerId { get; set; }
         public string Motherboard { get; set; } //  Το private σημαίνει ότι η property είναι προσβάσιμη μόνο μέσα στην ίδια την κλάση Computer.
-       
-        public int? CPUCores {get; set;}
+
+        public int? CPUCores { get; set; }
         public bool HasWifi { get; set; }
         public bool HasLTE { get; set; }
-        public DateTime ReleaseDate { get; set; }
+        public DateTime? ReleaseDate { get; set; }
         public decimal Price { get; set; }
         public string VideoCard { get; set; }
 
@@ -24,7 +24,7 @@ namespace HelloWorld.Models
             {
                 Motherboard = "";
             }
-             if (CPUCores == null)
+            if (CPUCores == null)
             {
                 CPUCores = 0;
             }

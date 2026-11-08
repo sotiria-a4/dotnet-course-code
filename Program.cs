@@ -1,141 +1,113 @@
-﻿// See https://aka.ms/new-console-template for more information
-// Console.WriteLine("Hello c # Programmers!");
-// Console.WriteLine("Hello c # Programmers!");
-// Console.Write("First");
-// Console.Write("Second");
-// Console.WriteLine("Hello c # Programmers!");
-// Console.Write("Third");
-
-// in c # we dont have functions we called them methods. string[] -> array of strings, it's not a list. It's multiple strings.
-
-// Console.WriteLine(args[0]);
-
-using System;
+﻿using System;
 using System.Data;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Dapper;
 using HelloWorld.Data;
 using HelloWorld.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace HelloWorld
 {
 
     internal class Program
     {
-    
+
         static void Main(string[] args)
         {
-            // string connectionString = "Server=localhost;Database=DotNetCourseDatabase;TrustServerCertificate=True;Trusted_Connection=True;";
-            // IDbConnection dbConnection = new SqlConnection(connectionString);
-            // twra poy exw ftiaksei to Dapper.cs anti na exw auto to block twn 2 grammwn:
-            //ftiaxnw ena instnace ths klashs moy
-
             IConfiguration config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
+                .AddJsonFile("appsettings.json")
+                .Build();
 
             DataContextDapper dapper = new DataContextDapper(config);
-            DataContextDapperEF entityFramework = new DataContextDapperEF(config);
 
+            // string sql = @"INSERT INTO TutorialAppSchema.Computer (   
+            //     Motherboard,
+            //     HasWifi,
+            //     HasLTE, 
+            //     ReleaseDate, 
+            //     Price, 
+            //     VideoCard
+            // ) VALUES ('" + myComputer.Motherboard 
+            //          + "','" + myComputer.HasWifi 
+            //          + "','" + myComputer.HasLTE 
+            //          + "','" + myComputer.ReleaseDate 
+            //          + "','" + myComputer.Price 
+            //          + "','" + myComputer.VideoCard 
+            //          + "')";
 
-            // string sqlCommand = "SELECT GETDATE()";
+            // File.WriteAllText("log.txt", sql);
+            // using StreamWriter openFile = new("log.txt", append: true);
+            // openFile.WriteLine("\n" + sql + "\n");
+            // openFile.Close();
 
-            // prin ftiaksw dapper:  DateTime rightnow = dbConnection.QuerySingle<DateTime>("SELECT GETDATE()"); // we use "QuerySingle" a dapper to run a query.
-            DateTime rightnow = dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
-            // Console.WriteLine(rightnow);
+            string computersJson = File.ReadAllText("Computers.json");
 
-            // create a query: that is going to insert a row based around our computer object
+            //File.ReadAllText("log.txt");
+            // Console.WriteLine(computersJson);
 
-            Computer myComputer = new Computer() // OUR FIRST INSTANCE OF our model ( comptuer class)
+            JsonSerializerOptions options = new JsonSerializerOptions()
             {
-                Motherboard = "Z690",
-
-                HasWifi = true,
-                HasLTE = false,
-                ReleaseDate = DateTime.Now,
-                Price = 943.87m,
-                VideoCard = "RTX 2060"
-
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase //ta onomata twn C# properties metatrepontai se camelCase otan sugkrinonte me to JSON
             };
 
-            entityFramework.Add(myComputer);
-            entityFramework.SaveChanges();
+            IEnumerable<Computer>? computersNewtonsoft = System.Text.Json.JsonSerializer.Deserialize<IEnumerable<Computer>>(computersJson, options);
+            IEnumerable<Computer>? computersSystem = JsonConvert.DeserializeObject<IEnumerable<Computer>>(computersJson);    // Deserialize: to string computersJson ginetai lista apo Computer
 
-
-            string sql = @"INSERT INTO TutorialAppSchema.Computer (   
-                Motherboard,
-                HasWifi,
-                HasLTE, 
-                ReleaseDate, 
-                Price, 
-                VideoCard
-            ) VALUES ('" + myComputer.Motherboard + "','" + myComputer.HasWifi + "','" + myComputer.HasLTE + "','" + myComputer.ReleaseDate + "','" + myComputer.Price + "','" + myComputer.VideoCard + "')";
-            // so all we have to do now is pass this query, this sql statement into a dapper.
-            //   Console.WriteLine(sql);
-
-            //  int result = dbConnection.Execute(sql); // the return value of this is going to be the number of rows that were affected by this query. So if we insert one row, then the return value is going to be one. 
-            bool result = dapper.ExecuteSql(sql);       // our result is just whether or not successfull                           // Console.WriteLine(result);
-                                                        //or
-                                                        // int result = dapper.ExecuteSqlWithRowCount(sql);
-
-            string sqlSelect = @"SELECT
-                Computer.ComputerId,
-                Computer.Motherboard,
-                Computer.HasWifi,
-                Computer.HasLTE, 
-                Computer.ReleaseDate, 
-                Computer.Price, 
-                Computer.VideoCard
-            FROM TutorialAppSchema.Computer";
-
-            // IEnumerable<Computer> computers = dbConnection.Query<Computer>(sqlSelect);
-            IEnumerable<Computer> computers = dapper.LoadData<Computer>(sqlSelect);
-
-            Console.WriteLine("' ComputerId','Motherboard','HasWifi', 'HasLTE', 'ReleaseDate' " + ", 'Price', 'VideoCard '");
-
-            foreach (Computer singleComputer in computers)
+            if (computersNewtonsoft != null)
             {
-                Console.WriteLine("'" + singleComputer.ComputerId
-                    + "','" + singleComputer.Motherboard
-                    + "','" + singleComputer.HasWifi
-                    + "','" + singleComputer.HasLTE
-                    + "','" + singleComputer.ReleaseDate
-                    + "','" + singleComputer.Price
-                    + "','" + singleComputer.VideoCard
-                    + "'");
-            }
-
-            IEnumerable<Computer>? computersEF = entityFramework.Computer?.ToList<Computer>(); // entityFramework.Computer : Θέλω να αποκτήσω πρόσβαση στα δεδομένα του entity Computer μέσω του Entity Framework»
-                                                                                               // .ToList<Computer>() : einai ena LINQ extension method, to EF kalei to antistoixo SQL query kai metatrepei ta object se mia lista antikeimenwn
-
-            if (computersEF != null)
-            {
-                Console.WriteLine("' ComputerId','Motherboard','HasWifi', 'HasLTE', 'ReleaseDate' " + ", 'Price', 'VideoCard '");
-
-                foreach (Computer singleComputer in computersEF)
+                foreach (Computer computer in computersNewtonsoft)
                 {
-                    Console.WriteLine("'" + singleComputer.ComputerId
-                        + "','" + singleComputer.Motherboard
-                        + "','" + singleComputer.HasWifi
-                        + "','" + singleComputer.HasLTE
-                        + "','" + singleComputer.ReleaseDate
-                        + "','" + singleComputer.Price
-                        + "','" + singleComputer.VideoCard
-                        + "'");
+                    string sql = @"INSERT INTO TutorialAppSchema.Computer (   
+                        Motherboard,
+                        HasWifi,
+                        HasLTE, 
+                        ReleaseDate, 
+                        Price, 
+                        VideoCard
+                    ) VALUES ('" + EscapeSingleQuote(computer.Motherboard)
+                             + "','" + computer.HasWifi
+                             + "','" + computer.HasLTE
+                             + "','" + computer.ReleaseDate
+                             + "','" + computer.Price
+                             + "','" + EscapeSingleQuote(computer.VideoCard)
+                             + "')";
+
+                    dapper.ExecuteSql(sql);
+
+                    //Console.WriteLine(computer.Motherboard);
+                    //Console.WriteLine(computer.ComputerId);
+                    //Console.WriteLine(computer.HasWifi);
                 }
             }
 
-            // Console.WriteLine(myComputer.Motherboard);
-            // Console.WriteLine(myComputer.HasWifi);
-            // Console.WriteLine(myComputer.HasLTE);
-            // Console.WriteLine(myComputer.ReleaseDate);
-            // Console.WriteLine(myComputer.Price);
-            // Console.WriteLine(myComputer.VideoCard);
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            };
 
+            // Serialize: h lista apo Computer ginetai pali string
+            string computersCopyNewtonsoft = JsonConvert.SerializeObject(computersNewtonsoft, settings); // that's similar to the string we deserialized "computers" 
+            File.WriteAllText("computersCopyNewtonsoft.txt", computersCopyNewtonsoft);
+
+            string computesCopySystem = System.Text.Json.JsonSerializer.Serialize(computersSystem, options); // that's similar to the string we deserialized "computers" 
+            File.WriteAllText("computersCopySystem.txt", computesCopySystem);
+
+            // Serialize = antikeimena C# -> keimeno JSON.
+            // By default kai oi dyo vivliothikes grafoun ta keys opws ta onomata twn C# properties (PascalCase).
+            // Gia camelCase keys xreiazetai rythmisi se KATHE vivliothiki ksexwrista:
+            //   Newtonsoft       -> JsonSerializerSettings + CamelCasePropertyNamesContractResolver
+            //   System.Text.Json -> JsonSerializerOptions + JsonNamingPolicy.CamelCase
+            // Sto Deserialize o kanonas orizei poio key PSAXNOUME, sto Serialize poio key GRAFOUME.
         }
+        static string EscapeSingleQuote(string input)
+        {
+            string output = input.Replace("'", "''");
+            return output;
+        }
+
     }
 }
