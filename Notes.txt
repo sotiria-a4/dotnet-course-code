@@ -418,3 +418,94 @@ SIMPLER ALTERNATIVE:
 ComputersSnake.json → Deserialize + JsonPropertyName → Computer → Dapper → SQL Server
 
 
+----------------------
+SYNCHRONOUS vs ASYNCHRONOUS PROGRAMMING (async / await)
+
+1. ORISMOI
+
+Synchronous (sygxroni ektelesi):
+O kwdikas ekteleitai me ti seira. Kathe ergasia prepei na oloklirwthei prin ksekinisei i epomeni.
+Oso mia ergasia perimenei, to thread paramenei mplokarismeno.
+
+Asynchronous (asygxroni ektelesi):
+Otan mia ergasia perimenei kati (vasi, diktyo, arxeio, xrono), to thread apeleftherwnetai kai mporei na kanei alli douleia.
+Otan i anamoni teleiwsei, i ergasia synexizei apo to simeio pou eixe stamatisei.
+
+PROSOXH: Asynchronous den simainei aparaitita pio grigoro oute parallilo. Simainei oti den spatalame to thread oso perimenoume.
+
+
+2. VASIKES ENNOIES
+
+Thread = I "grammi ektelesis" pou trexei ton kwdika.
+Task = Antikeimeno pou antiproswpevei mia ergasia i opoia tha oloklirwthei sto mellon.
+Task<T> = Task pou epistrefei timi typou T otan oloklirwthei.
+async = Dilwnei oti i methodos mporei na xrisimopoiei await. Apo mono tou den trexei kwdika se allo thread.
+await = Perimenei na teleiwsei ena Task xwris na mplokarei to thread. O ypoloipos kwdikas tis methodou ekteleitai meta.
+
+
+3. Thread.Sleep vs Task.Delay
+
+Thread.Sleep(100)       : Synchronous. Mplokarei to thread gia 100 ms.
+await Task.Delay(100)   : Asynchronous. Perimenei 100 ms xwris na mplokarei to thread.
+
+
+4. PARADEIGMA
+
+static void ConsoleAfterDelay(string text, int delayTime)
+{
+    Thread.Sleep(delayTime);
+    Console.WriteLine(text);
+}
+
+static async Task ConsoleAfterDelayAsync(string text, int delayTime)
+{
+    await Task.Delay(delayTime);
+    Console.WriteLine(text);
+}
+
+Task secondTask = ConsoleAfterDelayAsync("Task 2", 150);   // ksekinaei AMESWS
+ConsoleAfterDelay("Delay", 101);                           // mplokarei ti Main gia 101 ms
+Task thirdTask = ConsoleAfterDelayAsync("Task 3", 50);     // ksekinaei META to Delay
+await secondTask;                                          // i Main perimenei to Task 2
+await thirdTask;                                           // i Main perimenei to Task 3
+
+- To Task ksekinaei otan kaloume ti methodo, oxi otan grafoume await.
+- To await kathorizei pou tha perimenei i Main, oxi pote tha treksei to Task.
+- Ta Task trexoun taftoxrona, opote i seira eksodou eksartatai apo tous xronous.
+  Me kontinous xronous (px 100 kai 101 ms) i seira mporei na allaksei apo ektelesi se ektelesi.
+
+
+5. new Task vs Task.Run
+
+Task firstTask = new Task(() => { ... });
+firstTask.Start();
+
+- To new Task apla dimiourgei to Task. Den trexei mexri na kalesoume Start().
+- Stin praksi protimame to Task.Run(() => { ... }), pou to dimiourgei kai to ksekinaei mazi.
+
+
+6. GIATI XREIAZETAI TO await STI MAIN
+
+Xwris await, i Main mporei na teleiwsei prin oloklirwthoun ta Task.
+Otan teleiwsei i Main, termatizei to programma kai ta Task pou trexoun akomi diakoptontai.
+Gia na xrisimopoiisoume await, i Main prepei na einai: static async Task Main(string[] args)
+
+
+7. KANONES
+
+- Mia async methodos epistrefei Task i Task<T>.
+- Apofevgoume to async void (ektos apo event handlers).
+- Oi async methodoi syniithws teleiwnoun se Async (px ConsoleAfterDelayAsync).
+- Apofevgoume ta .Result kai .Wait(), giati mplokaroun to thread. Xrisimopoioume await.
+- async xwris await sti methodo: warning CS1998 kai i methodos trexei sygxrona.
+- To async/await einai idaniko gia anamones (I/O): vasi, API, arxeia.
+- Gia vari douleia epeksergasias (CPU) xrisimopoioume Task.Run.
+
+
+8. NA TO THYMAMAI
+
+Synchronous = perimenw kai to thread menei mplokarismeno.
+Asynchronous = perimenw kai to thread einai eleuthero gia alli douleia.
+Task = i ergasia.
+async = i methodos mporei na perimenei.
+await = perimene edw mexri na teleiwsei to Task, xwris na mplokareis to thread.

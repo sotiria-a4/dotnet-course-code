@@ -12,27 +12,27 @@ namespace HelloWorld.Data
         private string _connectionString = "Server=localhost;Database=DotNetCourseDatabase;TrustServerCertificate=True;Trusted_Connection=True;";
         public DataContextDapper(IConfiguration config)
         {
-          //  _config = config;
+            //  _config = config;
             _connectionString = config.GetConnectionString("DefaultConnection");
         }
-        
-        
+
+
         public IEnumerable<T> LoadData<T>(string sql)
         {
-             IDbConnection dbConnection = new SqlConnection(_connectionString);
-             return dbConnection.Query<T>(sql);
+            IDbConnection dbConnection = new SqlConnection(_connectionString);
+            return dbConnection.Query<T>(sql);
         }
 
         public T LoadDataSingle<T>(string sql)
         {
-             IDbConnection dbConnection = new SqlConnection(_connectionString);
-             return dbConnection.QuerySingle<T>(sql);
+            IDbConnection dbConnection = new SqlConnection(_connectionString);
+            return dbConnection.QuerySingle<T>(sql);
         }
 
-        public bool ExecuteSql (string sql)
+        public bool ExecuteSql(string sql)
         {
             IDbConnection dbConnection = new SqlConnection(_connectionString);
-            return (dbConnection.Execute(sql) > 0 );
+            return (dbConnection.Execute(sql) > 0);
         }
 
         public int ExecuteSqlWithRowCount(string sql)
@@ -40,7 +40,7 @@ namespace HelloWorld.Data
             IDbConnection dbConnection = new SqlConnection(_connectionString);
             return dbConnection.Execute(sql);
         }
-           
+
     }
 
 }
