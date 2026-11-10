@@ -509,3 +509,220 @@ Asynchronous = perimenw kai to thread einai eleuthero gia alli douleia.
 Task = i ergasia.
 async = i methodos mporei na perimenei.
 await = perimene edw mexri na teleiwsei to Task, xwris na mplokareis to thread.
+
+
+-----------------------------------------
+
+SQL: JOINS, EXISTS, UNION KAI INDEXES (arxeio SQL/SQLQuery_1.sql)
+
+1. USE KAI GO
+
+USE DotNetCourseDatabase;
+GO
+
+- USE = epilegei se poia vasi tha trexoun ta queries pou akolouthoun.
+- GO = DEN einai entoli SQL. Einai entoli tou SSMS / Azure Data Studio pou xwrizei to script se "batches".
+  Ola ta queries prin to GO stelnontai mazi, meta ta epomena.
+
+PROSOXH: An patisw Run xwris na epileksw kati, trexei OLO to arxeio,
+mazi me ta DELETE kai ta CREATE INDEX. Gia na treksw ena query, to epilegw prwta.
+
+
+2. SELECT ME ALIAS KAI SYNENWSI KEIMENOU
+
+[Users].[FirstName] + ' ' + [Users].[LastName] AS FullName
+
+- To + enwnei keimena: "Sotiria" + " " + "Andiari" = "Sotiria Andiari".
+- AS FullName = alias, to onoma pou tha exei i stili sto apotelesma.
+- Oi agkyles [ ] einai proairetikes. Xreiazontai mono an to onoma exei kena 'h einai leksi-kleidi tis SQL.
+
+PROSOXH: An to FirstName 'h to LastName einai NULL, olo to FullName ginetai NULL.
+Lysi: CONCAT(FirstName, ' ', LastName), pou metraei to NULL san keno keimeno.
+
+FROM TutorialAppSchema.Users AS Users
+
+- TutorialAppSchema = to schema (san fakelos mesa sti vasi).
+- AS Users = alias tou pinaka. Meta grafoume Users.UserId anti gia olo to onoma.
+
+
+3. INNER JOIN vs LEFT JOIN
+
+FROM TutorialAppSchema.Users AS Users
+    INNER JOIN TutorialAppSchema.UserSalary AS UserSalary
+        ON UserSalary.UserId = Users.UserId
+    LEFT JOIN TutorialAppSchema.UserJobInfo AS UserJobInfo
+        ON UserJobInfo.UserId = Users.UserId
+
+- ON = i synthiki pou leei poia grammi tou enos pinaka tairiazei me poia tou allou.
+
+INNER JOIN = Krataei MONO tis grammes pou yparxoun KAI stous 2 pinakes.
+             Xristis xwris misthos -> DEN emfanizetai katholou.
+
+LEFT JOIN  = Krataei OLES tis grammes tou aristerou pinaka (Users),
+             akoma kai an den yparxei antistoixia sto deksi (UserJobInfo).
+             Xristis xwris JobInfo -> emfanizetai, me JobTitle kai Department = NULL.
+
+STO DIKO MAS QUERY:
+- Emfanizontai mono oi xristes pou exoun misthos (INNER JOIN me UserSalary).
+- Apo autous, osoi den exoun JobInfo emfanizontai me NULL sto JobTitle kai Department (LEFT JOIN).
+
+Px:
+Users:        1 Maria, 2 Nikos, 3 Eleni
+UserSalary:   1 -> 5000, 3 -> 4000
+UserJobInfo:  1 -> Developer
+
+Apotelesma:
+1 | Maria | Developer | 5000
+3 | Eleni | NULL      | 4000
+(o Nikos leipei giati den exei misthos)
+
+PROSOXH: Sto SELECT exoume 2 stiles me onoma UserId (Users.UserId kai UserSalary.UserId).
+To SSMS to deixnei kanonika, alla otan to diavazoume apo C# (Dapper) kalytera na exoume monadika onomata.
+
+
+4. WHERE KAI ORDER BY
+
+WHERE Users.Active = 1        -> mono energoi xristes (Active einai BIT: 1 = true, 0 = false).
+ORDER BY Users.UserId DESC    -> taksinomisi apo to megalytero UserId sto mikrotero.
+                                 ASC = apo to mikrotero sto megalytero (to default).
+
+SEIRA EKTELESIS (oxi seira grafis):
+FROM / JOIN -> WHERE -> SELECT -> ORDER BY
+Gi' auto sto ORDER BY mporw na xrisimopoiisw alias tou SELECT, enw sto WHERE oxi.
+
+
+5. DELETE ME BETWEEN
+
+DELETE FROM TutorialAppSchema.UserSalary WHERE UserId BETWEEN 250 AND 750
+
+- To BETWEEN periexei KAI ta 2 akra: 250 kai 750 diagrafontai kai auta.
+- Isodynamo me: WHERE UserId >= 250 AND UserId <= 750
+- 750 - 250 + 1 = 501 grammes (an ola ta UserId yparxoun).
+
+PROSOXH: To DELETE den exei undo. Prwta trexw to idio WHERE me SELECT,
+blepw ti tha svistei, kai meta allazw to SELECT se DELETE.
+Gi' auto to exoume se sxolio (--).
+
+
+6. EXISTS
+
+SELECT [UserSalary].[UserId],
+       [UserSalary].[Salary]
+FROM TutorialAppSchema.UserSalary
+WHERE EXISTS (
+    SELECT * FROM TutorialAppSchema.UserJobInfo AS UserJobInfo
+    WHERE UserJobInfo.UserId = UserSalary.UserId)
+    AND UserId <> 7
+
+- Gia KATHE grammi tou UserSalary rwtaei:
+  "Yparxei toulaxiston mia grammi sto UserJobInfo me to idio UserId?"
+- NAI -> i grammi emfanizetai. OXI -> den emfanizetai.
+- To EXISTS epistrefei mono true / false. Den fernei stiles apo to UserJobInfo.
+  Gi' auto to SELECT * mesa tou den paizei rolo (to idio kai me SELECT 1).
+- Stamataei sto prwto tairiasma, den psaxnei tis ypoloipes grammes.
+- To subquery xrisimopoiei timi apo to eksoteriko query (UserSalary.UserId).
+  Auto legetai correlated subquery.
+- AND UserId <> 7 = epipleon synthiki tou eksoterikou WHERE: na min einai o xristis 7.
+  <> simainei "diaforo" (to idio me !=).
+- Edw o pinakas den exei alias (AS), ara to onoma tou UserSalary leitourgei ws onoma.
+
+
+7. EXISTS vs INNER JOIN
+
+To antistoixo me JOIN:
+
+SELECT UserSalary.UserId, UserSalary.Salary
+FROM TutorialAppSchema.UserSalary AS UserSalary
+    INNER JOIN TutorialAppSchema.UserJobInfo AS UserJobInfo
+        ON UserJobInfo.UserId = UserSalary.UserId
+
+EINAI TO IDIO? OXI pantote.
+- An kathe UserId yparxei MIA fora sto UserJobInfo: idio apotelesma.
+- An ena UserId yparxei 2 fores sto UserJobInfo:
+    EXISTS     -> o xristis emfanizetai 1 fora.
+    INNER JOIN -> o xristis emfanizetai 2 fores (diples grammes).
+
+POTE TO KATHE ENA:
+EXISTS     : Thelw grammes tou enos pinaka pou EXOUN antistoixia ston allo.
+             Den xreiazomai stiles apo ton allo pinaka.
+INNER JOIN : Thelw na SYNDYASW dedomena kai apo tous 2 pinakes.
+NOT EXISTS : To antitheto. Grammes pou DEN exoun antistoixia (px misthoi xwris JobInfo).
+
+
+8. UNION vs UNION ALL
+
+SELECT [UserId], [Salary] FROM TutorialAppSchema.UserSalary
+UNION ALL
+SELECT [UserId], [Salary] FROM TutorialAppSchema.UserSalary
+
+- Enwnei ta apotelesmata 2 SELECT se enan pinaka, to ena KATW apo to allo.
+  (To JOIN enwnei stiles DIPLA-DIPLA, to UNION grammes TI MIA KATW APO TIN ALLI.)
+
+UNION     = afairei tis diples grammes (kanei DISTINCT). Pio argo, giati prepei na sygkrinei.
+UNION ALL = krataei OLES tis grammes, kai tis diples. Pio grigoro.
+
+STO DIKO MAS PARADEIGMA (o idios pinakas 2 fores):
+UNION     -> kathe grammi emfanizetai 1 fora (oi diples svinontai).
+UNION ALL -> kathe grammi emfanizetai 2 fores.
+
+KANONES:
+- Kai ta 2 SELECT prepei na exoun ton idio arithmo stilwn, me symvatous typous, me tin idia seira.
+- Ta onomata twn stilwn ta pairnei apo to prwto SELECT.
+- ORDER BY mpainei mono mia fora, sto telos.
+
+
+9. INDEXES (EYRETIRIA)
+
+Ti einai: Mia domi pou voithaei ti vasi na vriskei grammes grigora,
+xwris na diavazei olo ton pinaka (table scan).
+San to eyretirio sto telos enos vivliou.
+
+Kostos: Ta SELECT ginontai pio grigora, alla ta INSERT / UPDATE / DELETE pio arga,
+giati prepei na enimerwnetai kai to index. Pianei kai xwro.
+
+CLUSTERED INDEX
+CREATE CLUSTERED INDEX cix_UserSalary_UserId ON TutorialAppSchema.UserSalary(UserId)
+- Taksinomei tis IDIES tis grammes tou pinaka me vasi to UserId.
+- San tilefwnikos katalogos: ta dedomena einai idi me ti seira.
+- MONO ENA ana pinaka (oi grammes mporoun na einai taksinomimenes me enan mono tropo).
+- To PRIMARY KEY dimiourgei synithws aftomata clustered index.
+  An o pinakas exei idi clustered index, to CREATE CLUSTERED INDEX apotygxanei.
+
+NONCLUSTERED INDEX
+CREATE NONCLUSTERED INDEX ix_UserJobInfo_JobTitle ON TutorialAppSchema.UserJobInfo(JobTitle)
+    INCLUDE (Department)
+- Ksexwristi domi, taksinomimeni me to JobTitle, pou deixnei pou einai i kathe grammi.
+- Mporoume na exoume POLLA ana pinaka.
+- INCLUDE (Department) = apothikeuei mesa sto index kai to Department.
+  Ena query pou zitaei JobTitle + Department apantietai MONO apo to index,
+  xwris na paei ston pinaka. Auto legetai covering index.
+
+FILTERED INDEX
+CREATE NONCLUSTERED INDEX fix_users_Active ON TutorialAppSchema.Users(Active)
+    INCLUDE ([Email], [FirstName], [LastName])
+    WHERE Active = 1
+- Index pou periexei MONO tis grammes pou tairiazoun sto WHERE (energoi xristes).
+- Pio mikro kai pio grigoro apo ena index se olo ton pinaka.
+- Voithaei queries pou exoun idio filtro, opws to diko mas: WHERE Users.Active = 1.
+- An to query zitaei kai stiles pou DEN einai sto INCLUDE (px Gender),
+  i vasi prepei na paei kai ston pinaka gia autes.
+
+ONOMATA (convention):
+cix_ = clustered index, ix_ = (nonclustered) index, fix_ = filtered index.
+Morfi: prothema_Pinakas_Stili, px ix_UserJobInfo_JobTitle.
+
+PROSOXH: Ena CREATE INDEX trexei mia fora. An to ksanatrekso, vgazei error oti yparxei idi.
+
+
+10. NA TO THYMAMAI
+
+INNER JOIN = mono oi grammes pou tairiazoun kai stous 2 pinakes.
+LEFT JOIN  = oles oi grammes tou aristerou, NULL opou den yparxei antistoixia.
+EXISTS     = "yparxei antistoixia?" -> filtrarei, kathe grammi mia fora.
+UNION      = grammes apo 2 queries, xwris diples.
+UNION ALL  = grammes apo 2 queries, me tis diples.
+BETWEEN    = periexei kai ta 2 akra.
+Clustered index    = taksinomei ton idio ton pinaka, mono 1.
+Nonclustered index = ksexwristo eyretirio, polla.
+INCLUDE            = epipleon stiles mesa sto index, gia na min paei ston pinaka.
+Filtered index     = index mono gia tis grammes tou WHERE.
